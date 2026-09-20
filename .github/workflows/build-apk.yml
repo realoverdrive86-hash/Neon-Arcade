@@ -1,35 +1,72 @@
-name: Build Custom Offline APK
+name: Professional Build Offline APK
 on:
   push:
     branches:
-      - main  # Смените на master, если ваша ветка называется так
+      - main  # Замените на master, если ваша главная ветка называется так
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Convert HTML to APK
-        uses: Illusion-Dev/html-to-apk@v1.0.1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          # Папка, где лежит index.html и icon.png
-          build-folder-path: 'https://github.com/realoverdrive86-hash/Neon-Arcade.git' 
-          
-          # Офлайн-название приложения на экране телефона (в кавычках)
-          app-name: "Neon Arcade" 
-          
-          # Путь к вашей иконке в репозитории
-          icon-path: 'https://github.com/realoverdrive86-hash/Neon-Arcade.git' 
-          
-          # Уникальный ID пакета. Измените на свое (только латиница и точки).
-          # Нужно, чтобы Android понимал, что это за приложение, и мог его обновлять.
-          package-name: "com.realoverdrive.neonarcade" 
+          node-version: 20
 
-      - name: Upload APK Artifact
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova Project
+        # com.mycompany.neonarcade — это имя пакета (Package Name). Напишите свое латиницей.
+        # "Neon Arcade" — это имя приложения на телефоне
+        run: cordova create my-app com.realoverdrive.neonarcade "Neon Arcade"
+
+      - name: Move Web Assets & Setup Icon
+        run: |
+          # Очищаем стандартный шаблон Cordova
+          rm -rf my-app/www/*
+          
+          # Копируем ваш index.html в сборку
+          cp index.html my-app/www/index.html
+          
+          # Создаем папку для иконки и копируем icon.png туда
+          mkdir -p my-app/res/
+          cp icon.png my-app/res/icon.png
+
+      - name: Configure App (Icon and Offline settings)
+        run: |
+          cd my-app
+          # Прописываем путь к кастомной иконке внутри главного конфигурационного файла config.xml
+          sed -i '/<\/widget>/i \    <icon src="res/icon.png" />' config.xml
+          # Отключаем внешние сетевые доступы для полной автономности и офлайн-безопасности
+          sed -i 's/<allow-intent href="http:\/\/\*:\/\*" \/>//g' config.xml
+          sed -i 's/<allow-intent href="https:\/\/\*:\/\*" \/>//g' config.xml
+
+      - name: Add Android Platform
+        run: |
+          cd my-app
+          cordova platform add android
+
+      - name: Build Android APK
+        run: |
+          cd my-app
+          cordova build android --debug
+
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: custom-offline-apk
-          path: apk/
+          name: Neon-Arcade-Premium-APK
+          path: my-app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
