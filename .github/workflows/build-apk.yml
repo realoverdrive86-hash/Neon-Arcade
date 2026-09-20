@@ -1,0 +1,35 @@
+name: Build Custom Offline APK
+on:
+  push:
+    branches:
+      - main  # Смените на master, если ваша ветка называется так
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Convert HTML to APK
+        uses: darkshredder/web-to-app-action@main
+        with:
+          # Папка, где лежит index.html и icon.png
+          build-folder-path: 'https://github.com/realoverdrive86-hash/Neon-Arcade.git' 
+          
+          # Офлайн-название приложения на экране телефона (в кавычках)
+          app-name: "Neon Arcade" 
+          
+          # Путь к вашей иконке в репозитории
+          icon-path: 'https://github.com/realoverdrive86-hash/Neon-Arcade.git' 
+          
+          # Уникальный ID пакета. Измените на свое (только латиница и точки).
+          # Нужно, чтобы Android понимал, что это за приложение, и мог его обновлять.
+          package-name: "com.realoverdrive.neonarcade" 
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-offline-apk
+          path: apk/
+          
